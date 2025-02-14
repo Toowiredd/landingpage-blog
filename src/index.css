@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: black;
+}
+
+@layer components {
+  .neon-border {
+    @apply border border-neon-electric/40 shadow-[0_0_30px_rgba(0,204,255,0.3)] 
+           hover:border-neon-electric/60 hover:shadow-[0_0_40px_rgba(0,204,255,0.4)] 
+           transition-all duration-500;
+  }
+  
+  .neon-text {
+    @apply bg-gradient-to-r from-neon-blue via-neon-electric to-neon-accent 
+           bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(0,204,255,0.5)];
+  }
+  
+  .neon-button {
+    @apply relative px-8 py-4 bg-gradient-to-r from-neon-blue to-neon-electric 
+           rounded-lg font-semibold text-lg transition-all duration-500 
+           hover:shadow-[0_0_40px_rgba(0,204,255,0.5)] hover:scale-105
+           before:absolute before:inset-0 before:bg-gradient-to-r 
+           before:from-neon-blue/20 before:to-neon-electric/20 
+           before:rounded-lg before:opacity-0 before:transition-opacity 
+           before:duration-500 hover:before:opacity-100;
+  }
+
+  .dark-glow {
+    @apply relative after:absolute after:inset-0 
+           after:bg-gradient-radial after:from-neon-glow/30 
+           after:to-transparent after:blur-xl after:-z-10;
+  }
+
+  .neon-glow {
+    @apply relative shadow-[0_0_30px_rgba(0,204,255,0.3)]
+           hover:shadow-[0_0_40px_rgba(0,204,255,0.4)]
+           transition-all duration-500;
+  }
+}
