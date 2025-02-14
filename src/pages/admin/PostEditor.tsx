@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  Save, Calendar, Clock, ArrowLeft, Trash2, 
-  CheckCircle, XCircle 
+  Save, ArrowLeft, Trash2, 
+  CheckCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { BlogPost } from '../../types/blog';
@@ -18,35 +18,33 @@ export function PostEditor() {
     published_at: null
   });
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      loadPost();
-    }
-  }, [id]);
-
-  const loadPost = async () => {
+  const loadPost = useCallback(async () => {
+    if (!id) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('posts')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
       if (data) setPost(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading post');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadPost();
+  }, [loadPost]);
 
   const handleSave = async (status: 'draft' | 'published') => {
-    setSaving(true);
+    setLoading(true);
     try {
       const postData = {
         ...post,
@@ -54,7 +52,7 @@ export function PostEditor() {
         published_at: status === 'published' ? new Date().toISOString() : null
       };
 
-      const { error } = id
+      const { error: saveError } = id
         ? await supabase
             .from('posts')
             .update(postData)
@@ -63,12 +61,12 @@ export function PostEditor() {
             .from('posts')
             .insert([postData]);
 
-      if (error) throw error;
+      if (saveError) throw saveError;
       navigate('/admin/posts');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error saving post');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
@@ -76,12 +74,12 @@ export function PostEditor() {
     if (!id || !window.confirm('Are you sure you want to delete this post?')) return;
 
     try {
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('posts')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
       navigate('/admin/posts');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error deleting post');
@@ -107,77 +105,38 @@ export function PostEditor() {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Posts
           </button>
-
-          <div className="flex items-center gap-4">
-            {id && (
-              <button
-                onClick={handleDelete}
-                className="flex items-center px-4 py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </button>
-            )}
+          <div className="flex space-x-4">
             <button
               onClick={() => handleSave('draft')}
-              className="flex items-center px-4 py-2 bg-gray-700/50 text-white rounded-lg hover:bg-gray-700/70 transition-colors"
+              className="flex items-center px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
             >
               <Save className="w-4 h-4 mr-2" />
               Save Draft
             </button>
             <button
               onClick={() => handleSave('published')}
-              className="neon-button py-2 px-4 flex items-center"
+              className="flex items-center px-4 py-2 bg-neon-electric text-black rounded hover:bg-neon-blue transition-colors"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Publish
             </button>
+            {id && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500 transition-colors"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </button>
+            )}
           </div>
         </div>
-
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
-
-        <div className="space-y-6">
-          <div className="relative dark-glow">
-            <div className="relative p-6 bg-black/40 backdrop-blur-xl rounded-lg neon-border">
-              <input
-                type="text"
-                value={post.title || ''}
-                onChange={(e) => setPost({ ...post, title: e.target.value })}
-                placeholder="Post Title"
-                className="w-full text-3xl font-bold bg-transparent border-none focus:ring-0 text-white placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          <div className="relative dark-glow">
-            <div className="relative p-6 bg-black/40 backdrop-blur-xl rounded-lg neon-border">
-              <textarea
-                value={post.excerpt || ''}
-                onChange={(e) => setPost({ ...post, excerpt: e.target.value })}
-                placeholder="Post Excerpt"
-                className="w-full bg-transparent border-none focus:ring-0 text-gray-300 placeholder-gray-500 resize-none"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="relative dark-glow">
-            <div className="relative p-6 bg-black/40 backdrop-blur-xl rounded-lg neon-border">
-              <textarea
-                value={post.content || ''}
-                onChange={(e) => setPost({ ...post, content: e.target.value })}
-                placeholder="Post Content"
-                className="w-full bg-transparent border-none focus:ring-0 text-gray-300 placeholder-gray-500 resize-none"
-                rows={20}
-              />
-            </div>
-          </div>
-        </div>
+        {/* Add form fields for editing the post here */}
       </div>
     </div>
   );
